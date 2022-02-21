@@ -1,0 +1,56 @@
+---
+title: "ENS to GeneID Data Cleaner"
+author: "Cy Chittenden"
+date: "2/20/2022"
+output: html_document
+---
+
+```{r}
+library(stringr)
+
+converter_table <- read.csv(file = "ensembl2geneID.txt", sep="")
+```
+
+
+```{r}
+
+add_gID <- function(data){
+  
+  #add column of numbers for each row of the data set (called GeneID)
+  data <- cbind(GeneID = rownames(data), data)
+  rownames(data) <- 1:nrow(data)
+  
+  #Set start and end indexes of ENS IDs in dataset
+  barrier <- str_detect(data$GeneID, "ENS")
+  ENS_Start_idx <- min(which(barrier == TRUE)) -1
+  ENS_End_idx <- max(which(barrier == TRUE))
+  
+  # create 2 data frames
+  x1 <-data.frame(ensemble=c(data$GeneID[ENS_Start_idx:ENS_End_idx]), genotype=c(data$Gene_Name[ENS_Start_idx:ENS_End_idx]))
+  x2 <-data.frame(ensemble=c(converter_table$Ensembl_ID), other_id=c(converter_table$Symbol))
+  
+  # generate an index of the ensembl_ids of x1 in x2
+  idx <- match(x1$ensemble, x2$ensemble)
+  
+  # use the index to replace the ensembl IDs in x1 with the other_ids from x2. If an element from x1 is missing from x2 that element will be replaced by a <NA>
+  x1$ensemble <- x2[idx,"other_id"]
+  
+  #combine vectors
+  symbolID <- c(data$Gene_Name[1:(ENS_Start_idx-1)], x1$ensemble)
+  
+  #Add gID column to dataset
+  data$Gene_Name[ENS_Start_idx:ENS_End_idx] <- x1$ensemble
+  
+  
+  #save to directory
+  #write.table(data, file = "ENS_CLEAN_NSC.WT.sample_ID_NS_VEG_vs_NS_uninf.txt", sep=" ")
+  
+  return(data)
+  
+ 
+  
+  
+}
+add_gID(#dataset)
+
+```
